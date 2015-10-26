@@ -1,0 +1,85 @@
+html
+  head
+    script(src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js")
+    script(src="https://ajax.googleapis.com/ajax/libs/angularjs/1.3.15/angular.min.js")
+    script(src="https://cdn.socket.io/socket.io-1.3.7.js")
+    script(src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js")
+    link(rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css")
+    style.
+      .neuron {
+        color: white;
+        margin-top: 10px;
+        background-color: black;
+        min-height: 200px;
+      }
+
+      .neuron.signaling {
+        background-color: green;
+      }
+
+
+    script.
+      var App = angular.module('App', []);
+      App.controller('Body', function($scope) {
+        $scope.socket = io();
+        $scope.socket.on('signal', function(msg) {
+          var to = $scope.neurons[msg.to];
+          to.received++;
+          to.hidden = msg.signal;
+          to.normalized = msg.normalized;
+          to.norm = msg.norm;
+          $scope.neurons[msg.from].sent++;
+          $scope.$apply();
+        })
+        $scope.socket.on('neurons', function(msg) {
+          $scope.neurons = {};
+          msg.neurons.forEach(function(neuron, idx) {
+            neuron.rank = idx + 1;
+            $scope.neurons[neuron.id] = neuron;
+          })
+          $scope.neuronsOrdered = msg.neurons;
+          $scope.$apply();
+        })
+
+        $scope.train = function() {
+          $scope.socket.emit('train');
+        }
+      })
+
+      App.controller('Neuron', function($scope) {
+        console.log('neu', $scope.neuron.id);
+        $scope.neuron.received = 0;
+        $scope.neuron.sent = 0;
+
+        $scope.flash = function(attr) {
+          $scope[attr] = true;
+          setTimeout(function() {
+            $scope[attr] = false;
+            $scope.$apply();
+          }, 50);
+        }
+        $scope.$watch('neuron.sent', function() {
+          $scope.flash('signaling');
+        })
+        $scope.$watch('neuron.received', function() {
+          $scope.flash('receiving');
+        })
+      })
+
+  body(ng-app="App")
+    .container(ng-controller="Body")
+      .row
+        .col-xs-12
+          a.btn.btn-success(ng-click="train()") Train
+      .row(ng-repeat="neuron in neuronsOrdered")
+        .neuron.col-xs-12.col-sm-2.col-sm-offset-5(ng-controller="Neuron"
+          ng-class="{signaling: signaling}")
+          h1 {{ neuron.id }}
+          .row
+            .col-xs-12
+              .progress
+                .progress-bar(style="width: {{ 10 * neuron.norm }}%")
+          .row
+            .col-xs-2(ng-repeat="num in neuron.normalized track by $index")
+              span(ng-bind="num | number:2")
+
