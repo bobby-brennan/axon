@@ -82,9 +82,14 @@ html
             a.btn.btn-success(ng-click="test()") Test
             a.btn.btn-success(ng-click="socket.emit('reset')") Reset
       .row(ng-repeat="neuron in neuronsOrdered")
-        .neuron.col-xs-4(ng-controller="Neuron"
-          style="background-color: rgb({{50 + neuron.sent}}, {{50 + neuron.received}}, 50)")
-          h3 {{ neuron.id }}
+        .neuron.col-xs-4(ng-controller="Neuron")
+          .row
+            .col-xs-8
+              h3 {{ neuron.id }}
+            .col-xs-2(style="background-color: rgb({{50 + neuron.sent}}, 50, 50)")
+              h3 S
+            .col-xs-2(style="background-color: rgb(50, {{50 + neuron.received}}, 50)")
+              h3 R
           .row
             .col-xs-12
               .progress
