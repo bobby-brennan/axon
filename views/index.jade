@@ -13,10 +13,6 @@ html
         min-height: 150px;
       }
 
-      .neuron.signaling {
-        background-color: green;
-      }
-
       .neuron .state-bar {
         margin-bottom: 4px;
         height: 8px;
@@ -31,14 +27,17 @@ html
           var from = $scope.neurons[msg.from];
           from.flash('sent');
           to.flash('received');
-          to.transforms = msg.transforms;
-          from.hidden = msg.signal;
-          from.normalized = msg.normalized;
-          from.norm = msg.norm;
           if (to.id === 'output') {
             to.normalized = msg.normalized;
           }
           $scope.$apply();
+        })
+        $scope.socket.on('neuron', function(msg) {
+          var neuron = $scope.neurons[msg.id];
+          neuron.hidden = msg.hidden;
+          neuron.norm = msg.norm;
+          neuron.normalized = msg.normalized;
+          neuron.transforms = msg.transforms;
         })
         $scope.socket.on('neurons', function(msg) {
           $scope.neurons = {};
@@ -84,8 +83,7 @@ html
             a.btn.btn-success(ng-click="socket.emit('reset')") Reset
       .row(ng-repeat="neuron in neuronsOrdered")
         .neuron.col-xs-4(ng-controller="Neuron"
-          ng-class="{signaling: signaling}"
-          style="background-color: rgb({{50 + neuron.sent}}, 50, 50)")
+          style="background-color: rgb({{50 + neuron.sent}}, {{50 + neurons.received}}, 50)")
           h3 {{ neuron.id }}
           .row
             .col-xs-12
