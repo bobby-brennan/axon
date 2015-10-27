@@ -83,7 +83,7 @@ html
             a.btn.btn-success(ng-click="socket.emit('reset')") Reset
       .row(ng-repeat="neuron in neuronsOrdered")
         .neuron.col-xs-4(ng-controller="Neuron"
-          style="background-color: rgb({{50 + neuron.sent}}, {{50 + neurons.received}}, 50)")
+          style="background-color: rgb({{50 + neuron.sent}}, {{50 + neuron.received}}, 50)")
           h3 {{ neuron.id }}
           .row
             .col-xs-12
