@@ -92,7 +92,8 @@ html
           .row
             .col-xs-12
               .progress
-                .progress-bar(style="width: {{ 10 * neuron.norm }}%")
+                .progress-bar(ng-show="neuron.norm >= 1" style="width: {{ 10 * neuron.norm }}%")
+                .progress-bar.progress-bar-warning(ng-show="neuron.norm < 1" style="width: {{ 10 * neuron.norm }}%")
           .row(ng-repeat="num in neuron.normalized track by $index")
             .col-xs-12
               .progress.state-bar
