@@ -37,14 +37,14 @@ Http.listen(3000, function(){
 
 var manager;
 var train = function() {
-  manager.train(20, 3000, function() {
+  manager.train(20, 2000, function() {
   });
 }
 
 var test = function() {
   Async.series(manager.samples.map(function(sample) {
     return function(acb) {
-      manager.test(1, 10000, sample, acb);
+      manager.test(1, 6000, sample, acb);
     }
   }), function(err) {
   })

@@ -68,7 +68,7 @@ html
         $scope.neuron.flash = function(attr) {
           if ($scope.neuron[attr] < 150) $scope.neuron[attr] += 10;
           setTimeout(function() {
-            $scope.neuron[attr] -= 10;
+            if ($scope.neuron[attr] > 10) $scope.neuron[attr] -= 10;
             $scope.$apply();
           }, 50);
         }
