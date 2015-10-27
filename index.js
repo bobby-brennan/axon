@@ -4,6 +4,11 @@ var App = Express();
 var Http = require('http').Server(App);
 var IO = require('socket.io')(Http);
 
+var Manager = require('./lib/manager.js');
+
+var VERBOSE = false;
+global.verbose = VERBOSE;
+
 App.set('views', __dirname + '/views')
 App.set('view engine', 'jade');
 App.engine('jade', require('jade').__express);
@@ -15,8 +20,14 @@ App.get('/', function(req, res) {
 IO.on('connection', function(socket){
   console.log('a user connected');
   setup(socket);
+  socket.on('test', function(msg) {
+    test();
+  })
   socket.on('train', function(msg) {
-    nextRound();
+    train();
+  })
+  socket.on('reset', function(msg) {
+    setup(socket);
   })
 });
 
@@ -24,26 +35,22 @@ Http.listen(3000, function(){
   console.log('listening on *:3000');
 });
 
-var nextRound;
+var manager;
+var train = function() {
+  manager.train(20, 3000, function() {
+  });
+}
+
+var test = function() {
+  Async.series(manager.samples.map(function(sample) {
+    return function(acb) {
+      manager.test(1, 10000, sample, acb);
+    }
+  }), function(err) {
+  })
+}
 
 var setup = function(socket) {
-  var Manager = require('./lib/manager.js');
-
-  var manager = new Manager({socket: socket});
-  
-  var VERBOSE = false;
-
-  nextRound = function() {
-    global.verbose = VERBOSE;
-    manager.train(30000, function() {
-      global.verbose = false;
-      Async.series(manager.samples.map(function(sample) {
-        return function(acb) {
-          manager.run(4000, sample, acb);
-        }
-      }), function(err) {
-        console.log('ROUND DONE');
-      })
-    });
-  }
+  global.log = 'dist,error';
+  manager = new Manager({socket: socket});
 }

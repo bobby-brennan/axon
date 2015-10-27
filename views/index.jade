@@ -10,13 +10,17 @@ html
         color: white;
         margin-top: 10px;
         background-color: black;
-        min-height: 200px;
+        min-height: 150px;
       }
 
       .neuron.signaling {
         background-color: green;
       }
 
+      .neuron .state-bar {
+        margin-bottom: 4px;
+        height: 8px;
+      }
 
     script.
       var App = angular.module('App', []);
@@ -24,11 +28,16 @@ html
         $scope.socket = io();
         $scope.socket.on('signal', function(msg) {
           var to = $scope.neurons[msg.to];
-          to.received++;
-          to.hidden = msg.signal;
-          to.normalized = msg.normalized;
-          to.norm = msg.norm;
-          $scope.neurons[msg.from].sent++;
+          var from = $scope.neurons[msg.from];
+          from.flash('sent');
+          to.flash('received');
+          to.transforms = msg.transforms;
+          from.hidden = msg.signal;
+          from.normalized = msg.normalized;
+          from.norm = msg.norm;
+          if (to.id === 'output') {
+            to.normalized = msg.normalized;
+          }
           $scope.$apply();
         })
         $scope.socket.on('neurons', function(msg) {
@@ -40,46 +49,58 @@ html
           $scope.neuronsOrdered = msg.neurons;
           $scope.$apply();
         })
+        $scope.socket.on('result', function(msg) {
+          $scope.results.push(msg);
+        })
 
         $scope.train = function() {
           $scope.socket.emit('train');
         }
+        $scope.test = function() {
+          $scope.results = [];
+          $scope.socket.emit('test');
+        }
       })
 
       App.controller('Neuron', function($scope) {
-        console.log('neu', $scope.neuron.id);
         $scope.neuron.received = 0;
         $scope.neuron.sent = 0;
-
-        $scope.flash = function(attr) {
-          $scope[attr] = true;
+        $scope.neuron.flash = function(attr) {
+          if ($scope.neuron[attr] < 150) $scope.neuron[attr] += 10;
           setTimeout(function() {
-            $scope[attr] = false;
+            $scope.neuron[attr] -= 10;
             $scope.$apply();
           }, 50);
         }
-        $scope.$watch('neuron.sent', function() {
-          $scope.flash('signaling');
-        })
-        $scope.$watch('neuron.received', function() {
-          $scope.flash('receiving');
-        })
       })
 
   body(ng-app="App")
     .container(ng-controller="Body")
       .row
         .col-xs-12
-          a.btn.btn-success(ng-click="train()") Train
+          .btn-toolbar
+            a.btn.btn-success(ng-click="train()") Train
+            a.btn.btn-success(ng-click="test()") Test
+            a.btn.btn-success(ng-click="socket.emit('reset')") Reset
       .row(ng-repeat="neuron in neuronsOrdered")
-        .neuron.col-xs-12.col-sm-2.col-sm-offset-5(ng-controller="Neuron"
-          ng-class="{signaling: signaling}")
-          h1 {{ neuron.id }}
+        .neuron.col-xs-4(ng-controller="Neuron"
+          ng-class="{signaling: signaling}"
+          style="background-color: rgb({{50 + neuron.sent}}, 50, 50)")
+          h3 {{ neuron.id }}
           .row
             .col-xs-12
               .progress
                 .progress-bar(style="width: {{ 10 * neuron.norm }}%")
-          .row
-            .col-xs-2(ng-repeat="num in neuron.normalized track by $index")
+          .row(ng-repeat="num in neuron.normalized track by $index")
+            .col-xs-12
+              .progress.state-bar
+                .progress-bar.progress-bar-success(ng-show="num >= 0" style="width: {{ num * 100 }}%")
+                .progress-bar.progress-bar-danger(ng-show="num < 0" style="width: {{ -num * 100 }}%")
+        .transform.col-xs-2(ng-repeat="(id, transform) in neuron.transforms")
+          h5.text-center {{ id }}
+          .row(ng-repeat="row in transform")
+            .col-xs-3(ng-repeat="num in row track by $index")
               span(ng-bind="num | number:2")
-
+      .row(ng-repeat="result in results")
+        .col-xs-12
+          span Classified {{ result.input }} as {{ result.output }} {{ result.distance | number:8}}
