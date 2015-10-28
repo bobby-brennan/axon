@@ -23,14 +23,15 @@ html
       App.controller('Body', function($scope) {
         $scope.socket = io();
         $scope.socket.on('signal', function(msg) {
+          /*
           var to = $scope.neurons[msg.to];
           var from = $scope.neurons[msg.from];
           from.flash('sent');
           to.flash('received');
           $scope.$apply();
+          */
         })
         $scope.socket.on('neuron', function(msg) {
-          if (msg.id === 'output') console.log('out', msg);
           var neuron = $scope.neurons[msg.id];
           neuron.hidden = msg.hidden;
           neuron.norm = msg.norm;
