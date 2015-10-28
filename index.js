@@ -37,12 +37,21 @@ Http.listen(3000, function(){
 
 var manager;
 var train = function() {
-  manager.train(20, 2000, function() {
+  var iterations = 20;
+  var time = 4000;
+  var iter = 0;
+  var interval = setInterval(function() {
+    manager.io.socket.emit('progress', {
+      progress: ++iter / iterations,
+    })
+  }, time)
+  manager.train(20, time, function() {
+    clearInterval(interval);
   });
 }
 
 var test = function() {
-  Async.series(manager.trainingSamples.map(function(sample) {
+  Async.series(manager.testSamples.map(function(sample) {
     return function(acb) {
       manager.test(1, 6000, sample, acb);
     }
@@ -51,6 +60,6 @@ var test = function() {
 }
 
 var setup = function(socket) {
-  global.log = 'dist,error';
+  global.log = 'dist,time,error';
   manager = new Manager({socket: socket});
 }
