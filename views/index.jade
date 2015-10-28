@@ -35,7 +35,7 @@ html
           neuron.hidden = msg.hidden;
           neuron.norm = msg.norm;
           neuron.normalized = msg.normalized;
-          neuron.transforms = msg.transforms;
+          //neuron.transforms = msg.transforms;
           $scope.$apply();
         })
         $scope.socket.on('neurons', function(msg) {

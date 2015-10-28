@@ -4,7 +4,7 @@ var App = Express();
 var Http = require('http').Server(App);
 var IO = require('socket.io')(Http);
 
-var Manager = require('./lib/manager.js');
+var Manager = require('./lib/mnist.js');
 
 var VERBOSE = false;
 global.verbose = VERBOSE;
@@ -42,7 +42,7 @@ var train = function() {
 }
 
 var test = function() {
-  Async.series(manager.samples.map(function(sample) {
+  Async.series(manager.testSamples.map(function(sample) {
     return function(acb) {
       manager.test(1, 6000, sample, acb);
     }
