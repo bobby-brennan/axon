@@ -1,0 +1,122 @@
+html
+  head
+    script(src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js")
+    script(src="https://ajax.googleapis.com/ajax/libs/angularjs/1.3.15/angular.min.js")
+    script(src="https://cdn.socket.io/socket.io-1.3.7.js")
+    script(src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js")
+    link(rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css")
+    style.
+      .neuron {
+        color: white;
+        margin-top: 10px;
+        background-color: black;
+        min-height: 150px;
+      }
+
+      .neuron .state-bar {
+        margin-bottom: 4px;
+        height: 8px;
+      }
+
+    script.
+      var App = angular.module('App', []);
+      App.controller('Body', function($scope) {
+        $scope.socket = io();
+        $scope.set = function(id, val) {
+          $scope.socket.emit('set', {
+            id: id,
+            value: val,
+          })
+        }
+        $scope.socket.on('signal', function(msg) {
+          var to = $scope.neurons[msg.to];
+          var from = $scope.neurons[msg.from];
+          from.flash('sent');
+          to.flash('received');
+          $scope.$apply();
+        })
+        $scope.socket.on('neuron', function(msg) {
+          var neuron = $scope.neurons[msg.id];
+          neuron.hidden = msg.hidden;
+          neuron.norm = msg.norm;
+          neuron.normalized = msg.normalized;
+          neuron.transforms = msg.transforms;
+          $scope.$apply();
+        })
+        $scope.socket.on('neurons', function(msg) {
+          $scope.neurons = {};
+          msg.neurons.forEach(function(neuron, idx) {
+            neuron.rank = idx + 1;
+            $scope.neurons[neuron.id] = neuron;
+          })
+          $scope.neuronsOrdered = msg.neurons;
+          $scope.$apply();
+        })
+        $scope.socket.on('result', function(msg) {
+          $scope.results.push(msg);
+        })
+        $scope.socket.on('progress', function(msg) {
+          $scope.progress = msg.progress;
+        })
+
+        $scope.train = function() {
+          $scope.socket.emit('train');
+        }
+        $scope.test = function() {
+          $scope.results = [];
+          $scope.socket.emit('test');
+        }
+      })
+
+      App.controller('Neuron', function($scope) {
+        $scope.neuron.received = 0;
+        $scope.neuron.sent = 0;
+        $scope.neuron.flash = function(attr) {
+          if ($scope.neuron[attr] < 150) $scope.neuron[attr] += 10;
+          setTimeout(function() {
+            if ($scope.neuron[attr] > 10) $scope.neuron[attr] -= 10;
+            $scope.$apply();
+          }, 50);
+        }
+      })
+
+  body(ng-app="App")
+    .container(ng-controller="Body")
+      hr
+      .row
+        .progress
+          .progress-bar(style="width: {{progress * 100}}%")
+      .row
+        .col-xs-12
+          .btn-toolbar
+            a.btn.btn-success(ng-click="set('in1', [10, 10])") in1 A
+            a.btn.btn-success(ng-click="set('in1', [-10, -10])") in1 B
+            a.btn.btn-info(ng-click="set('in2', [5, 15])") in2 A
+            a.btn.btn-info(ng-click="set('in2', [-15, 5])") in2 B
+      .row(ng-repeat="neuron in neuronsOrdered")
+        .neuron.col-xs-4(ng-controller="Neuron")
+          .row
+            .col-xs-8
+              h3 {{ neuron.id }}
+            .col-xs-2(style="background-color: rgb({{50 + neuron.sent}}, 50, 50)")
+              h3 S
+            .col-xs-2(style="background-color: rgb(50, {{50 + neuron.received}}, 50)")
+              h3 R
+          .row
+            .col-xs-12
+              .progress
+                .progress-bar(ng-show="neuron.norm >= 1" style="width: {{ 10 * neuron.norm }}%")
+                .progress-bar.progress-bar-warning(ng-show="neuron.norm < 1" style="width: {{ 10 * neuron.norm }}%")
+          .row(ng-repeat="num in neuron.normalized track by $index")
+            .col-xs-12
+              .progress.state-bar
+                .progress-bar.progress-bar-success(ng-show="num >= 0" style="width: {{ num * 100 }}%")
+                .progress-bar.progress-bar-danger(ng-show="num < 0" style="width: {{ -num * 100 }}%")
+        .transform.col-xs-2(ng-repeat="(id, transform) in neuron.transforms")
+          h5.text-center {{ id }}
+          .row(ng-repeat="row in transform")
+            .col-xs-3(ng-repeat="num in row track by $index")
+              span(ng-bind="num | number:2")
+      .row(ng-repeat="result in results")
+        .col-xs-12
+          span Classified {{ result.input }} as {{ result.output }} {{ result.distance | number:8}}
